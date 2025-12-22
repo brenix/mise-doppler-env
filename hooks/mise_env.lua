@@ -103,8 +103,17 @@ function PLUGIN:MiseEnv(ctx)
             local cache = io.open(cache_file, "r")
             if cache then
                 cache:close()
-                -- Get file modification time (macOS uses -f, Linux uses -c)
-                local stat_cmd = string.format('stat -f "%%m" "%s" 2>/dev/null || stat -c "%%Y" "%s" 2>/dev/null', cache_file, cache_file)
+                -- Get file modification time
+                -- Use native macOS stat if available, otherwise try Linux format
+                local stat_cmd
+                local is_macos = io.popen("uname"):read("*line") == "Darwin"
+                if is_macos then
+                    -- Use native macOS stat command explicitly to avoid conflicts other installed binaries
+                    stat_cmd = string.format('/usr/bin/stat -f "%%m" "%s" 2>/dev/null', cache_file)
+                else
+                    stat_cmd = string.format('stat -c "%%Y" "%s" 2>/dev/null', cache_file)
+                end
+
                 local stat_handle = io.popen(stat_cmd)
                 if stat_handle then
                     local mtime_str = stat_handle:read("*line")
