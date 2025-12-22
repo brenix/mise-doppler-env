@@ -98,25 +98,27 @@ function PLUGIN:MiseEnv(ctx)
         local json_output = nil
         local use_cache = false
 
-        -- Check if cache file exists and is fresh
-        local cache = io.open(cache_file, "r")
-        if cache then
-            cache:close()
-            -- Get file modification time
-            local stat_cmd = string.format('stat -f "%%m" "%s" 2>/dev/null || stat -c "%%Y" "%s" 2>/dev/null', cache_file, cache_file)
-            local stat_handle = io.popen(stat_cmd)
-            if stat_handle then
-                local mtime_str = stat_handle:read("*line")
-                stat_handle:close()
-                local mtime = tonumber(mtime_str)
-                local now = os.time()
+        -- Check if cache file exists and is fresh (only if caching is enabled)
+        if cache_ttl > 0 then
+            local cache = io.open(cache_file, "r")
+            if cache then
+                cache:close()
+                -- Get file modification time (macOS uses -f, Linux uses -c)
+                local stat_cmd = string.format('stat -f "%%m" "%s" 2>/dev/null || stat -c "%%Y" "%s" 2>/dev/null', cache_file, cache_file)
+                local stat_handle = io.popen(stat_cmd)
+                if stat_handle then
+                    local mtime_str = stat_handle:read("*line")
+                    stat_handle:close()
+                    local mtime = tonumber(mtime_str)
+                    local now = os.time()
 
-                if mtime and (now - mtime) < cache_ttl then
-                    use_cache = true
-                    cache = io.open(cache_file, "r")
-                    if cache then
-                        json_output = cache:read("*all")
-                        cache:close()
+                    if mtime and (now - mtime) < cache_ttl then
+                        use_cache = true
+                        cache = io.open(cache_file, "r")
+                        if cache then
+                            json_output = cache:read("*all")
+                            cache:close()
+                        end
                     end
                 end
             end
@@ -134,8 +136,8 @@ function PLUGIN:MiseEnv(ctx)
                 json_output = handle:read("*all")
                 handle:close()
 
-                -- Write to cache file
-                if json_output and json_output ~= "" then
+                -- Write to cache file (only if caching is enabled)
+                if cache_ttl > 0 and json_output and json_output ~= "" then
                     local cache_write = io.open(cache_file, "w")
                     if cache_write then
                         cache_write:write(json_output)
