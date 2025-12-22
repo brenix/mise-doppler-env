@@ -1,5 +1,7 @@
 # mise-doppler-env
 
+:warning: This was AI generated - Use at your own risk :warning:
+
 A [mise](https://mise.jdx.dev) environment plugin for loading secrets from [Doppler](https://www.doppler.com/).
 
 ## Prerequisites
