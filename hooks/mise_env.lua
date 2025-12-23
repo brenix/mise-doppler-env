@@ -86,7 +86,17 @@ function PLUGIN:MiseEnv(ctx)
 
     -- Only fetch if we have the required configuration
     if project and config then
-        local config_dir = os.getenv("MISE_CONFIG_DIR") or os.getenv("PWD") or "."
+        -- Use git root for project-specific cache, fallback to PWD if not in a git repo
+        local config_dir = os.getenv("PWD") or "."
+        local git_handle = io.popen("git rev-parse --show-toplevel 2>/dev/null")
+        if git_handle then
+            local git_root = git_handle:read("*line")
+            git_handle:close()
+            if git_root and git_root ~= "" then
+                config_dir = git_root
+            end
+        end
+
         local cache_file = config_dir .. "/.secrets.json"
         local cache_ttl = 0 -- Disabled by default (0 = no caching)
 
